@@ -31,7 +31,7 @@ export default function DashboardScreen({session}) {
 
   return (
     <View style={[styles.container]}>
-      <Tab.Navigator initialRouteName='Settings' screenOptions={({ route }) => ({
+      <Tab.Navigator initialRouteName='Search' screenOptions={({ route }) => ({
           tabBarIcon: ({ color, size }) => {
             let icon
             if(route.name == "Home") {
