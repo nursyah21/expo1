@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Pejalan Hijau",
-    "slug": "expo1",
+    "slug": "pejalanhijau",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#249D38"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -20,9 +20,9 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#ffffff00"
       },
-      "package": "com.jlnr.expo1"
+      "package": "com.jlnr.pejalanhijau"
     },
     "web": {
       "favicon": "./assets/favicon.png"
