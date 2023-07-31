@@ -3,9 +3,11 @@ import { useState, useEffect, useRef } from "react"
 import LoadingModal from "../LoadingModal"
 import styles, { color } from "../style"
 import { supabase } from "../../lib/supabase"
-import * as ImagePicker from 'react-native-image-picker'
+// import * as ImagePicker from 'react-native-image-picker'
 import { isValidUrl, profileSchema, stringToUuid, typeProfile } from "../../lib/utils"
 import { useFormik } from "formik"
+import * as ImagePicker from 'expo-image-picker';
+import imageToBase64 from 'image-to-base64/browser'
 
 const fetchUser = async (setData, form) => {
   const {data: {user}} = await supabase.auth.getUser()
@@ -20,6 +22,25 @@ const fetchUser = async (setData, form) => {
   form.values.username = data[0].name
   
   form.values.email = user.email 
+}
+
+const pickImageAsync = async (setLoading) => {
+  let result = await ImagePicker.launchImageLibraryAsync({
+    base64: true,
+    allowsEditing: true,
+    quality: 1,
+  });
+
+  if (!result.canceled) {
+    setLoading(true)
+    const base64 = 'data:image/png;base64,'+result.base64
+    const {data: {user}} = await supabase.auth.getUser()
+    await supabase.from('users').update({url_img: base64}).eq('id', user.id)
+    setLoading(false)
+    
+  } else {
+    alert('You did not select any image.');
+  }
 }
 
 function SettingsScreen({session}){
@@ -46,8 +67,6 @@ function SettingsScreen({session}){
       const { data, error } = await supabase.auth.admin.deleteUser(user.id)
       
       if(error) {
-        console.log(error)
-        console.log(error.message)
         Alert.alert('error', error.message)
       }
       
@@ -58,14 +77,8 @@ function SettingsScreen({session}){
     }
 
     const promptDelete = () => Alert.alert('Warning', 'Do you want to delete this account', [
-      {
-        text: 'yes',
-        onPress: () => deleteUser(),
-      },
-      {
-        text: 'No',
-        onPress: () => console.log('Cancel Pressed'),
-      }
+      {text: 'yes', onPress: () => deleteUser()},
+      {text: 'No',onPress: () => console.log('Cancel Pressed')}
     ]);
 
     const form = useFormik({
@@ -87,8 +100,7 @@ function SettingsScreen({session}){
       fetchUser(setData, form)
     }, [data])
 
-    const imageDefault = isValidUrl(data.email) ? 
-      {uri:data.url_img} : require('../../assets/anon.png')
+    const imageDefault = data.url_img ? {uri:data.url_img} : require('../../assets/anon.png')
   
     return (
       <View style={[styles.container, {padding: 10}]}>
@@ -97,7 +109,7 @@ function SettingsScreen({session}){
         <View>
           { editProfile ?
                 <View style={{alignItems: "center"}}>
-                  <TouchableOpacity style={{justifyContent: 'center', flexDirection: 'row'}}>
+                  <TouchableOpacity style={{justifyContent: 'center', flexDirection: 'row'}} onPress={()=>pickImageAsync(setLoading)}>
                       <Image source={imageDefault} style={[styles.imgProfile, {borderColor: color.primaryColor, borderWidth: 2}]} />
                   </TouchableOpacity>
                   <Text>Tap to change</Text>
@@ -114,12 +126,6 @@ function SettingsScreen({session}){
                 style={styles.input}
                 onChangeText={form.handleChange('username')}
                 value={form.values.username}/>
-              {/* <Text>Email</Text>
-              <TextInput
-                maxLength={200}
-                style={styles.input}
-                onChangeText={form.handleChange('email')}
-                value={form.values.email}/> */}
             </View>
             :
             <View style={{gap:2}}>
