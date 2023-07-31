@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "expo1",
+    "name": "Pejalan Hijau",
     "slug": "expo1",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -21,10 +21,16 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.jlnr.expo1"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bc74225b-93c2-4420-8a51-307d943ddee2"
+      }
     }
   }
 }
