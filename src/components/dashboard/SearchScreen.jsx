@@ -30,6 +30,7 @@ function UserScreen({id}){
   const [loading, setLoading] = useState(false)
   const [myId, setMyId] = useState()
   const [visitedId, setVisitedId] = useState()
+  const [canfollow, setCanfollow] = useState()
   const [isFollowing, setIsFollowing] = useState()
 
   useEffect(()=>{
@@ -52,6 +53,7 @@ function UserScreen({id}){
 
       setData(data[0])
       setVisitedId(data[0].id)
+      setCanfollow(user.id != data[0].id)
     })()
   },[])
 
@@ -87,7 +89,7 @@ function UserScreen({id}){
       
       if(follower.length != 0) setIsFollowing(true)
       else setIsFollowing(false)
-    
+      
       setLoading(false)
     }catch(e){
       console.log('error follow',e)
@@ -106,14 +108,14 @@ function UserScreen({id}){
             <Image source={imageDefault} style={[styles.imgProfile, {borderColor: color.primaryColor, borderWidth: 2}]} />
         </View>
         <Text>{data.name}</Text>
-        {
+        { canfollow ?
           isFollowing ? 
           <Button style={{marginTop: 4}} textColor={color.primaryColor} mode="outlined" onPress={unFollowUserHandle}>
             <Text>Unfollow</Text>
           </Button> :
           <Button style={{marginTop: 4}} textColor={color.primaryColor} mode="outlined" onPress={followUserHandle}>
             <Text>Follow</Text>
-          </Button>
+          </Button> : null
         }
       </View> : null
     }

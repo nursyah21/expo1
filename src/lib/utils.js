@@ -23,9 +23,10 @@ export const typeProfile = {
     url_img: ""
   }
 
+
 export const loginSchema = Yup.object({
     email: Yup.string().email().required(),
-    password: Yup.string().min(8)
+    password: Yup.string().min(8).required()
 })
 
 

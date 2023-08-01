@@ -18,7 +18,7 @@ export default function ForgetPasswrodScreen({navigation}) {
   const forgetPassword = async(value) => {
     setLoading(true)
     
-    const linkReset = 'https:/jlnr.netlify.app/reset-password'
+    const linkReset = 'https://jlnr.netlify.app/reset-password'
 
     let { error } = await supabase.auth.resetPasswordForEmail(
       value.email, {redirectTo: linkReset}

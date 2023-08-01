@@ -51,7 +51,7 @@ const FormLogin = ({navigation}) => {
                 value={form.values.email}
                 returnKeyType='next'
             />
-            { form.values.email != '' && form.errors.email ? (
+            { form.errors.email ? (
                 <Text style={styles.errorInput}>{form.errors.email}</Text>
             ) : null }
             <Text>Password</Text>
