@@ -3,13 +3,13 @@ import { useState, useEffect, useRef } from "react"
 import LoadingModal from "../LoadingModal"
 import styles, { color } from "../style"
 import { supabase } from "../../lib/supabase"
-// import * as ImagePicker from 'react-native-image-picker'
 import { isValidUrl, profileSchema, stringToUuid, typeProfile } from "../../lib/utils"
 import { useFormik } from "formik"
 import * as ImagePicker from 'expo-image-picker';
 import imageToBase64 from 'image-to-base64/browser'
 
 const fetchUser = async (setData, form) => {
+  console.log('run fetchuser')
   const {data: {user}} = await supabase.auth.getUser()
 
   if(user == null)return
@@ -19,9 +19,7 @@ const fetchUser = async (setData, form) => {
   
   if(error) return console.log(error.details)
   setData({auth_id: user.id, name:data[0]?.name, email: user.email, url_img: data[0]?.url_img})
-  form.values.username = data[0].name
-  
-  form.values.email = user.email 
+  if(!form.values.username)form.values.username = data[0]?.name
 }
 
 const pickImageAsync = async (setLoading) => {
@@ -48,6 +46,15 @@ function SettingsScreen({session}){
     const [loadingMessage, setLoadingMessage] = useState('Please wait...')
     const [editProfile, setEditProfile] = useState(false)
     const [data, setData] = useState(typeProfile)
+    const [messageError, setMessageError] = useState('')
+
+    useEffect(()=>{
+      (async function() {
+        setLoading(true)
+        await fetchUser(setData, form)
+        setLoading(false)
+      })()
+    }, [])
 
     const signOut = async () => {
       setLoading(true)
@@ -58,6 +65,7 @@ function SettingsScreen({session}){
     const cancelEdit = () => {
       setEditProfile(false)
     }
+
 
     const deleteUser = async () => {
       setLoadingMessage("delete account...")
@@ -81,32 +89,35 @@ function SettingsScreen({session}){
       {text: 'No',onPress: () => console.log('Cancel Pressed')}
     ]);
 
-    const form = useFormik({
-      initialValues: {username:'', email:''},
-      validationSchema: profileSchema,
-      onSubmit: async value => {
-        setLoading(true)
-        const {data: {user}} = await supabase.auth.getUser()
-        let { data, error } = await supabase.from('users').update({name: value.username}).eq('id', user.id)
-        if(error){
-          console.log(error)
-        }
-        setEditProfile(false)
-        setLoading(false)
+    const handleUpdate = async (value) => {
+      setLoading(true)
+      const {data: checkUser} = await supabase.from('users').select('*').eq('name',value.username)
+      if(checkUser.length != 0){
+        console.log(checkUser)
+        Alert.alert('fail', `${value.username} already exists`)
+        return setLoading(false)
       }
+      const {data: {user}} = await supabase.auth.getUser() 
+      let { data, error } = await supabase.from('users').update({name: value.username}).eq('id', user.id)
+      if(error)console.log(error)
+      setEditProfile(false)
+      await fetchUser(setData, form)
+      setLoading(false)
+    }
+
+    const form = useFormik({
+      initialValues: {username: ''},
+      validationSchema: profileSchema,
+      onSubmit: value => handleUpdate(value)
     })
 
-    useEffect(()=>{
-      fetchUser(setData, form)
-    }, [data])
-
     const imageDefault = data.url_img ? {uri:data.url_img} : require('../../assets/anon.png')
-  
+    
     return (
       <View style={[styles.container, {padding: 10}]}>
         <LoadingModal visible={loading} message={loadingMessage} />
-        
         <View>
+          
           { editProfile ?
                 <View style={{alignItems: "center"}}>
                   <TouchableOpacity style={{justifyContent: 'center', flexDirection: 'row'}} onPress={()=>pickImageAsync(setLoading)}>
@@ -126,6 +137,8 @@ function SettingsScreen({session}){
                 style={styles.input}
                 onChangeText={form.handleChange('username')}
                 value={form.values.username}/>
+                {form.errors.username ? <Text>{form.errors.username}</Text> : null}
+                {messageError ? <Text>{messageError}</Text> : null}
             </View>
             :
             <View style={{gap:2}}>

@@ -30,7 +30,7 @@ export const loginSchema = Yup.object({
 
 
 export const profileSchema = Yup.object({
-    username: Yup.string().min(4),
+    username: Yup.string().min(4).required(),
     email: Yup.string().email()
 })
 
