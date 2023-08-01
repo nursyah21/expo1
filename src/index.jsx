@@ -45,16 +45,18 @@ export default function App() {
     const [loading, setLoading] = useState(false)
 
     useEffect(()=>{
-        supabase.auth.getSession().then(({ data: { session } }) => {
-        setSession(session)
-        })
-        supabase.auth.onAuthStateChange((_event, session) => {
-        setSession(session)
-        })
-
-        if(session != null){
-        setLoading(true)
-        }
+        (async function(){
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session)
+          })
+          supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session)
+          })
+  
+          if(session != null){
+            setLoading(true)
+          }
+        })()
     }, [])
 
     return (

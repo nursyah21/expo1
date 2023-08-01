@@ -9,7 +9,6 @@ import * as ImagePicker from 'expo-image-picker';
 import imageToBase64 from 'image-to-base64/browser'
 
 const fetchUser = async (setData, form) => {
-  console.log('run fetchuser')
   const {data: {user}} = await supabase.auth.getUser()
 
   if(user == null)return
@@ -47,7 +46,7 @@ function SettingsScreen({session}){
     const [editProfile, setEditProfile] = useState(false)
     const [data, setData] = useState(typeProfile)
     const [messageError, setMessageError] = useState('')
-
+    
     useEffect(()=>{
       (async function() {
         setLoading(true)
