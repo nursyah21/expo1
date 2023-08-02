@@ -160,11 +160,11 @@ const NewMessage = ({setMewMessage, setRefresh}) => {
   </View>
 }
 
-const Post = ({data, setCommentOpen, commentOpen}) => {
+const Post = ({data, setHideSubmit, hideSubmit}) => {
   const [userId, setUserId] = useState(null)
   const [loading, setLoading] = useState(false)
   const profileImage = data.img_profile ? {uri:data.img_profile} : require('../../assets/anon.png')
-  
+  const [commentOpen, setCommentOpen] = useState(false)
   const [dataComment, setDataComment] = useState(null)
 
   useEffect(()=>{
@@ -248,6 +248,7 @@ const Post = ({data, setCommentOpen, commentOpen}) => {
 
   const handleComment = async () => {
     setCommentOpen(!commentOpen)
+    setHideSubmit(!hideSubmit)
   }
 
   return <View style={{marginBottom: 12}}>
@@ -294,7 +295,7 @@ const HomeScreen = ({session}) => {
     const [newMessage, setMewMessage] = useState(false)
     const [paginate, setPaginate] = useState(0)
     const [data, setData] = useState()
-    const [commentOpen, setCommentOpen] = useState(false)
+    const [showSubmit, setShowSubmit] = useState(true)
     const [refresh, setRefresh] = useState(false)
 
     const updateData = async () => {
@@ -374,10 +375,9 @@ const HomeScreen = ({session}) => {
       { newMessage ? <NewMessage setMewMessage={setMewMessage} setRefresh={setRefresh}/> : 
       <View style={[styles.container, {padding: 10}]}>
           {
-            loading ? null : commentOpen ? null : 
-            <View style={{position: 'absolute', bottom: 12, right: 5, zIndex: 100}}>
+            loading ? null : showSubmit ? <View style={{position: 'absolute', bottom: 12, right: 5, zIndex: 100}}>
               <Button buttonColor={color.primaryColor} mode="contained" onPress={()=>setMewMessage(true)} >Create post</Button>
-            </View>
+            </View> : null
           }
           {
             loading ? <Text>please wait...</Text> :
@@ -385,7 +385,7 @@ const HomeScreen = ({session}) => {
               contentContainerStyle={{flexGrow: 1}}
               style={{marginBottom: 4, paddingBottom: 100}}
               data={data}
-              renderItem={({item})=> <Post data={item} key={item.id} commentOpen={commentOpen} setCommentOpen={setCommentOpen} /> }
+              renderItem={({item})=> <Post data={item} key={item.id} setHideSubmit={setShowSubmit} hideSubmit={showSubmit} /> }
               keyExtractor={item => item.id}    
               onEndReachedThreshold={0.2}
               onEndReached={updateData}
