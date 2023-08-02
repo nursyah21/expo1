@@ -40,9 +40,21 @@ const pickImageAsync = async (setLoading, setUrlImg) => {
 // 
 const NewMessage = ({setMewMessage, setRefresh}) => {
   const [urlImg, setUrlImg] = useState(null)
+  const [userId, setUserId] = useState(null)
   const [loading, setLoading] = useState(false)
   const [emission, setEmission] = useState(0)
   
+  useEffect(()=>{
+    if(!userId){
+      (async function(){
+        setLoading(true)
+        let {data: {user}} = await supabase.auth.getUser()
+        setUserId(user.id)
+        setLoading(false)
+      })()
+    }
+  },[])
+
   const handleSubmit = async(data) => {
     setLoading(true)
     try {
@@ -72,7 +84,8 @@ const NewMessage = ({setMewMessage, setRefresh}) => {
         location: value.location, 
         carbon_footprint: emission * value.distance,
         like_count: 0,
-        comment_count: 0
+        comment_count: 0,
+        user_id: userId
       }
       handleSubmit(data)
     }
@@ -150,12 +163,93 @@ const NewMessage = ({setMewMessage, setRefresh}) => {
   </View>
 }
 
+const Post = ({data}) => {
+  const [userId, setUserId] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const profileImage = data.img_profile ? {uri:data.img_profile} : require('../../assets/anon.png')
+
+  useEffect(()=>{
+    if(!userId){
+      (async function(){
+        let {data: {user}} = await supabase.auth.getUser()
+        setUserId(user.id)
+      })()
+    }
+  },[])
+
+  const handleLike = async () => {
+    setLoading(true)
+    try{
+      let {data:like} = await supabase.from('likes').select('id').eq('user_id', userId).eq('post_id', data.id)
+      let like_count = like.length
+      
+      if(like.length) {
+        await supabase.from('likes').delete().eq('user_id', userId).eq('post_id', data.id)
+        like_count--
+      }
+      else {
+        await supabase.from('likes').insert([{user_id: userId, post_id: data.id}]).select()
+        like_count++
+      }
+      
+      await supabase.from('posts').update({ 'like_count':  like_count})
+      .eq('id', data.id).eq('user_id', userId).select()
+      data.like = like_count
+      
+    }catch(e){
+      console.log(e)
+    }
+    setLoading(false)
+  }
+
+  const handleComment = async () => {
+    console.log('comment', userId, data.id)
+  }
+
+  return <View style={{marginBottom: 12}}>
+    <View>
+      <LoadingModal visible={loading} />
+      <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        <Image 
+          source={profileImage} 
+          style={[styles.imgProfile, {height:20,width:20, marginBottom: 1}]} />
+          <Text style={{fontWeight: 'bold'}}>{data.username}</Text>
+      </View>
+      <Text style={{fontSize: 12, color: color.grayColor, marginHorizontal: 5}}>at - {data.location}</Text>
+    </View>
+  <View style={styles.boxContent}>
+    {
+      data.img_post ? 
+      <Image 
+        source={{uri:data.img_post}}
+        style={[styles.imgProfile, {height:240,width:'auto', borderRadius: 15}]}
+      /> : null
+    }
+    <Text>{data.content}</Text>
+    <View style={{borderTopWidth: 1, marginTop: 6, borderColor: color.borderColor, paddingVertical: 3, flexDirection: 'row'}}>
+      <TouchableOpacity style={{flexDirection:'row', alignItems: 'center'}} onPress={handleLike}>
+        <Text style={{marginHorizontal: 2, fontWeight: 'bold'}}>{data.like}</Text>
+        <AntDesign name="like2" size={24} color="black" />
+      </TouchableOpacity>
+      <TouchableOpacity style={{flexDirection:'row', alignItems: 'center', marginHorizontal: 6}} onPress={handleComment}>
+        <Text style={{marginHorizontal: 2, fontWeight: 'bold'}}>{data.comment}</Text>
+        <FontAwesome name="comment-o" size={24} color="black" />
+      </TouchableOpacity>
+      <View style={{flexDirection:'row', alignItems: 'center'}}>
+        <MaterialCommunityIcons name="foot-print" size={24} color="black" />
+        <Text style={{marginHorizontal: 2, fontWeight: 'bold'}}>{data.footprint}/co2</Text>
+      </View>
+    </View>
+  </View>
+</View>
+}
+
 const HomeScreen = ({session}) => {
     const [loading, setLoading] = useState(false)
     const [newMessage, setMewMessage] = useState(false)
     const [paginate, setPaginate] = useState(0)
     const [data, setData] = useState()
-    const [userData, setUserData] = useState(null)
+    // const [userData, setUserData] = useState(null)
     const [refresh, setRefresh] = useState(false)
 
     const updateData = async () => {
@@ -166,17 +260,16 @@ const HomeScreen = ({session}) => {
         let { data:posts, error } = await supabase.from('posts').select('*').range(paginate, paginate+4)
         setPaginate(posts.length)
         
-        let userdata = []
-        const {data:users, erros} = await supabase.from('users').select('name,url_img')
-        userdata = users
-        // setUserData(users)
+        // let userdata = []
+        const {data:users, erros} = await supabase.from('users').select('id,name,url_img')
         
         let temp = []
         posts.forEach(p=>{
+          let user = users.find(e=>e.id == p.user_id)
           temp.push({
             id: p.id,
-            username: userdata.find(e=>e.id == p.user_id).name,
-            img_profile: userdata.find(e=>e.id == p.user_id).url_img,
+            username: user.name,
+            img_profile: user.url_img,
             img_post: p.url_img,
             content: p.content,
             location: p.location,
@@ -185,6 +278,7 @@ const HomeScreen = ({session}) => {
             comment: p.comment_count
           })
         })
+
         temp = [...data, ...temp]
         if(temp.length > count_post.length) return
         setData(temp)
@@ -196,20 +290,17 @@ const HomeScreen = ({session}) => {
     const handleAllData = async () => {
       setLoading(true)
       try{
-        // let { data:count_post } = await supabase.from('posts').select('id')
-        if(paginate != 0)return
+        let { data:count_post } = await supabase.from('posts').select('id')
+        if(count_post.length == paginate)return setLoading(false)
         
         let { data:posts, error } = await supabase.from('posts').select('*').range(0, 3)
         setPaginate(posts.length)
-
-        let userdata = []
-        const {data:users, erros} = await supabase.from('users').select('name,url_img')
-        userdata = users
-        setUserData(users)
+        
+        const {data:users, erros} = await supabase.from('users').select('id,name,url_img')
+        
         let temp = []
         posts.forEach(p=>{
-          let user = userdata.find(e=>e.id == p.user_id)
-
+          let user = users.find(e=>e.id == p.user_id)
           temp.push({
             id: p.id,
             username: user.name,
@@ -228,46 +319,6 @@ const HomeScreen = ({session}) => {
         console.log(e)
       }
       setLoading(false)
-    }
-
-    const Post = ({data}) => {
-      const profileImage = data.img_profile ? {uri:data.img_profile} : require('../../assets/anon.png')
-
-      return <View style={{marginBottom: 12}}>
-        <View>
-          <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <Image 
-              source={profileImage} 
-              style={[styles.imgProfile, {height:20,width:20, marginBottom: 1}]} />
-              <Text style={{fontWeight: 'bold'}}>{data.username}</Text>
-          </View>
-          <Text style={{fontSize: 12, color: color.grayColor, marginHorizontal: 5}}>at - {data.location}</Text>
-        </View>
-      <View style={styles.boxContent}>
-        {
-          data.img_post ? 
-          <Image 
-            source={{uri:data.img_post}}
-            style={[styles.imgProfile, {height:240,width:'auto', borderRadius: 15}]}
-          /> : null
-        }
-        <Text>{data.content}</Text>
-        <View style={{borderTopWidth: 1, marginTop: 6, borderColor: color.borderColor, paddingVertical: 3, flexDirection: 'row'}}>
-          <TouchableOpacity style={{flexDirection:'row', alignItems: 'center'}}>
-            <Text style={{marginHorizontal: 2, fontWeight: 'bold'}}>{data.like}</Text>
-            <AntDesign name="like2" size={24} color="black" />
-          </TouchableOpacity>
-          <TouchableOpacity style={{flexDirection:'row', alignItems: 'center', marginHorizontal: 6}}>
-            <Text style={{marginHorizontal: 2, fontWeight: 'bold'}}>{data.comment}</Text>
-            <FontAwesome name="comment-o" size={24} color="black" />
-          </TouchableOpacity>
-          <View style={{flexDirection:'row', alignItems: 'center'}}>
-            <MaterialCommunityIcons name="foot-print" size={24} color="black" />
-            <Text style={{marginHorizontal: 2, fontWeight: 'bold'}}>{data.footprint}/co2</Text>
-          </View>
-        </View>
-      </View>
-    </View>
     }
 
     useEffect(()=>{
