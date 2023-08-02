@@ -6,12 +6,9 @@ import { supabase } from "../../lib/supabase"
 import { Button } from "react-native-paper"
 import { StyleSheet } from "react-native"
 import { useFormik } from "formik"
-// import RNPickerSelect from "react-native-picker-select"
 import {Picker} from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 import * as Yup from "yup"
-import { exampleImage } from "../../assets/example-img"
-import Ionicons from '@expo/vector-icons/Ionicons'
 import { AntDesign, EvilIcons, FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const mysytle = StyleSheet.create(
@@ -167,6 +164,7 @@ const Post = ({data}) => {
   const [userId, setUserId] = useState(null)
   const [loading, setLoading] = useState(false)
   const profileImage = data.img_profile ? {uri:data.img_profile} : require('../../assets/anon.png')
+  const [commentOpen, setCommentOpen] = useState(false)
 
   useEffect(()=>{
     if(!userId){
@@ -176,6 +174,48 @@ const Post = ({data}) => {
       })()
     }
   },[])
+
+  const Comment = () => {
+    const form = useFormik({
+      initialValues: {comment: ''},
+      validationSchema: Yup.object({
+        comment: Yup.string().min(4).required()
+      }),
+      onSubmit: value => {
+          (async function(){
+            setLoading(true)
+            try{
+              console.log(value.comment, userId, data.id)
+              let {error} = await supabase.from('comments').insert([
+                {post_id: data.id, comment: value.comment, user_id: userId}
+              ])
+              if(error) throw error
+              let {data: comments_count, error: count_error} = await supabase.from('comments').select().select('*').eq('post_id', data.id)
+              if(count_error) throw error
+
+              data.comment = comments_count.length ?? 0
+            }catch(e){
+              console.log(e)
+            }
+            setLoading(false)
+          })()
+      }
+    })
+
+    return <View>
+      <TextInput
+            maxLength={200}
+            style={styles.input}
+            onChangeText={form.handleChange('comment')}
+            onSubmitEditing={()=>form.handleSubmit()}
+            value={form.values.comment}
+            placeholder="new comment"
+        />
+        {form.errors.comment ? (
+            <Text style={styles.errorInput}>{form.errors.comment}</Text>
+        ) : null }
+    </View>
+  }
 
   const handleLike = async () => {
     setLoading(true)
@@ -203,7 +243,7 @@ const Post = ({data}) => {
   }
 
   const handleComment = async () => {
-    console.log('comment', userId, data.id)
+    setCommentOpen(!commentOpen)
   }
 
   return <View style={{marginBottom: 12}}>
@@ -241,6 +281,7 @@ const Post = ({data}) => {
       </View>
     </View>
   </View>
+  {commentOpen ? <Comment /> : null}
 </View>
 }
 
