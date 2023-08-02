@@ -160,11 +160,12 @@ const NewMessage = ({setMewMessage, setRefresh}) => {
   </View>
 }
 
-const Post = ({data}) => {
+const Post = ({data, setCommentOpen, commentOpen}) => {
   const [userId, setUserId] = useState(null)
   const [loading, setLoading] = useState(false)
   const profileImage = data.img_profile ? {uri:data.img_profile} : require('../../assets/anon.png')
-  const [commentOpen, setCommentOpen] = useState(false)
+  
+  const [dataComment, setDataComment] = useState(null)
 
   useEffect(()=>{
     if(!userId){
@@ -192,6 +193,9 @@ const Post = ({data}) => {
               if(error) throw error
               let {data: comments_count, error: count_error} = await supabase.from('comments').select().select('*').eq('post_id', data.id)
               if(count_error) throw error
+
+              await supabase.from('posts').update({ 'comment_count':  comments_count.length ?? 0})
+              .eq('id', data.id).eq('user_id', userId).select()
 
               data.comment = comments_count.length ?? 0
             }catch(e){
@@ -290,7 +294,7 @@ const HomeScreen = ({session}) => {
     const [newMessage, setMewMessage] = useState(false)
     const [paginate, setPaginate] = useState(0)
     const [data, setData] = useState()
-    // const [userData, setUserData] = useState(null)
+    const [commentOpen, setCommentOpen] = useState(false)
     const [refresh, setRefresh] = useState(false)
 
     const updateData = async () => {
@@ -370,7 +374,8 @@ const HomeScreen = ({session}) => {
       { newMessage ? <NewMessage setMewMessage={setMewMessage} setRefresh={setRefresh}/> : 
       <View style={[styles.container, {padding: 10}]}>
           {
-            loading ? null : <View style={{position: 'absolute', bottom: 12, right: 5, zIndex: 100}}>
+            loading ? null : commentOpen ? null : 
+            <View style={{position: 'absolute', bottom: 12, right: 5, zIndex: 100}}>
               <Button buttonColor={color.primaryColor} mode="contained" onPress={()=>setMewMessage(true)} >Create post</Button>
             </View>
           }
@@ -380,7 +385,7 @@ const HomeScreen = ({session}) => {
               contentContainerStyle={{flexGrow: 1}}
               style={{marginBottom: 4, paddingBottom: 100}}
               data={data}
-              renderItem={({item})=> <Post data={item} key={item.id} /> }
+              renderItem={({item})=> <Post data={item} key={item.id} commentOpen={commentOpen} setCommentOpen={setCommentOpen} /> }
               keyExtractor={item => item.id}    
               onEndReachedThreshold={0.2}
               onEndReached={updateData}
