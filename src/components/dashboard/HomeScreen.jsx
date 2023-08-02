@@ -170,8 +170,30 @@ const Post = ({data, setHideSubmit, hideSubmit}) => {
   useEffect(()=>{
     if(!userId){
       (async function(){
-        let {data: {user}} = await supabase.auth.getUser()
-        setUserId(user.id)
+        try{
+          let {data: {user}} = await supabase.auth.getUser()
+          setUserId(user.id)
+
+          // set for comment data
+
+          let {data: commentData, error} = await supabase.from('comments').select('*').eq('post_id', data.id)
+          let {data:users} = await supabase.from('users').select('id,name')
+          let temp = []
+          commentData.forEach(c=>{
+              let user = users.find(u => u.id == c.user_id) //await supabase.from('users').select('*').eq('id', c.id)
+              temp.push({
+                'username': user.name,
+                'comment': c.comment
+              })
+          })
+
+          setDataComment(temp)
+          
+          
+          if(error) throw error
+        }catch(e){
+          console.log(e)
+        }
       })()
     }
   },[])
@@ -186,7 +208,10 @@ const Post = ({data, setHideSubmit, hideSubmit}) => {
           (async function(){
             setLoading(true)
             try{
-              console.log(value.comment, userId, data.id)
+              
+              let {data:user} = await supabase.from('users').select('id,name').eq('id',userId)
+              // console.log(user)
+              // throw value.comment +" " + user[0].name 
               let {error} = await supabase.from('comments').insert([
                 {post_id: data.id, comment: value.comment, user_id: userId}
               ])
@@ -198,6 +223,10 @@ const Post = ({data, setHideSubmit, hideSubmit}) => {
               .eq('id', data.id).eq('user_id', userId).select()
 
               data.comment = comments_count.length ?? 0
+              let temp = dataComment ?? []
+              temp.push({username:user[0].name, comment: value.comment})
+              setDataComment(temp)
+
             }catch(e){
               console.log(e)
             }
@@ -218,6 +247,20 @@ const Post = ({data, setHideSubmit, hideSubmit}) => {
         {form.errors.comment ? (
             <Text style={styles.errorInput}>{form.errors.comment}</Text>
         ) : null }
+        { dataComment ?
+          dataComment.map((c,idx)=><View style={{columnGap: 6}} key={idx}>
+            <View style={{marginVertical: 2}}>
+              <View style={{borderWidth:1, borderColor: color.borderColor, padding: 3, borderRadius: 5, width: '95%'}}>
+                  <View style={{borderBottomWidth: 1, borderColor: color.borderColor}}>
+                    <Text style={{fontWeight: 'bold'}}>{c.username}</Text>
+                  </View>
+                  <Text>{c.comment}</Text>
+              </View>
+            </View>
+          </View>
+          ) : null
+        }
+        
     </View>
   }
 
