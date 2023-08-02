@@ -13,6 +13,13 @@ const styles = StyleSheet.create({
     backgroundWhite:{
         backgroundColor: '#fff'
     },
+    boxContent: {
+        borderWidth: 1,
+        width: '100%',
+        borderRadius: 5,
+        padding: 3,
+        // borderColor: 'rgba(0,0,0,.6)',
+    },
     btnPrimary: {
         alignItems: 'center',
         backgroundColor: color.primaryColor,

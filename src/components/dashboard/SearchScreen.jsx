@@ -151,17 +151,17 @@ function SearchScreen({setVisitUser}){
               <DataTable.Title>No</DataTable.Title>
               <DataTable.Title>Username</DataTable.Title>
             </DataTable.Header>
-            {result.map((e, idx)=><>
+            {result.map((e, idx)=>
               <TouchableOpacity key={idx} onPress={()=>{
                 setVisitUser({id:e.id,active:true})
                 navigation.navigate('VisitedTab')
               }}>
-                <DataTable.Row  key={idx}>
-                      <DataTable.Cell  key={idx+1}>{idx+1}</DataTable.Cell>
-                      <DataTable.Cell  key={idx+2}>{e.name}</DataTable.Cell>
+                <DataTable.Row>
+                      <DataTable.Cell>{idx+1}</DataTable.Cell>
+                      <DataTable.Cell>{e.name}</DataTable.Cell>
                 </DataTable.Row>
               </TouchableOpacity>
-            </>)}
+            )}
         </DataTable>
       </ScrollView>
       }

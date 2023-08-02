@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, Image, TextInput, Alert } from "react-native"
+import { View, Text, TouchableOpacity, Image, TextInput, Alert, ScrollView } from "react-native"
 import { useState, useEffect, useRef } from "react"
 import LoadingModal from "../LoadingModal"
 import styles, { color } from "../style"
@@ -115,7 +115,7 @@ function SettingsScreen({session}){
     return (
       <View style={[styles.container, {padding: 10}]}>
         <LoadingModal visible={loading} message={loadingMessage} />
-        <View>
+        <ScrollView>
           
           { editProfile ?
                 <View style={{alignItems: "center"}}>
@@ -153,8 +153,6 @@ function SettingsScreen({session}){
             </View>
             }
 
-        </View>
-        
         <TouchableOpacity style={styles.btnPrimary} onPress={()=> editProfile ? form.handleSubmit() : setEditProfile(!editProfile)}>
           <Text style={{color: 'white'}}>
             {editProfile ? "Submit" : "Edit Profile"}
@@ -171,6 +169,8 @@ function SettingsScreen({session}){
           <Text style={{color: 'white'}}>Delete Account</Text>
         </TouchableOpacity> : null
         }
+
+        </ScrollView>
       </View>
     )
   }
