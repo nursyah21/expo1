@@ -153,30 +153,24 @@ const NewMessage = ({setMewMessage, setRefresh}) => {
 const HomeScreen = ({session}) => {
     const [loading, setLoading] = useState(false)
     const [newMessage, setMewMessage] = useState(false)
-    const [paginate, setNewPaginate] = useState(0)
+    const [paginate, setPaginate] = useState(0)
     const [data, setData] = useState()
     const [userData, setUserData] = useState(null)
     const [refresh, setRefresh] = useState(false)
 
     const updateData = async () => {
       try{
-        console.log(paginate)
-      }catch(e){
+        let { data:count_post } = await supabase.from('posts').select('id')
+        if(count_post.length == paginate)return
 
-      }
-    }
-
-    const handleAllData = async () => {
-      try{
-        console.log('retrieve all data')
-        let { data:posts, error } = await supabase.from('posts').select('*').range(paginate, paginate+3)
+        let { data:posts, error } = await supabase.from('posts').select('*').range(paginate, paginate+4)
+        setPaginate(posts.length)
+        
         let userdata = []
         const {data:users, erros} = await supabase.from('users').select('name,url_img')
         userdata = users
-        setUserData(users)
-        // if(!userData){
-        // }
-        console.log()
+        // setUserData(users)
+        
         let temp = []
         posts.forEach(p=>{
           temp.push({
@@ -191,23 +185,64 @@ const HomeScreen = ({session}) => {
             comment: p.comment_count
           })
         })
-        
+        temp = [...data, ...temp]
+        if(temp.length > count_post.length) return
         setData(temp)
       }catch(e){
         console.log(e)
       }
     }
 
+    const handleAllData = async () => {
+      setLoading(true)
+      try{
+        // let { data:count_post } = await supabase.from('posts').select('id')
+        if(paginate != 0)return
+        
+        let { data:posts, error } = await supabase.from('posts').select('*').range(0, 3)
+        setPaginate(posts.length)
+
+        let userdata = []
+        const {data:users, erros} = await supabase.from('users').select('name,url_img')
+        userdata = users
+        setUserData(users)
+        let temp = []
+        posts.forEach(p=>{
+          let user = userdata.find(e=>e.id == p.user_id)
+
+          temp.push({
+            id: p.id,
+            username: user.name,
+            img_profile: user.url_img,
+            img_post: p.url_img,
+            content: p.content,
+            location: p.location,
+            footprint: p.carbon_footprint,
+            like: p.like_count,
+            comment: p.comment_count
+          })
+        })
+        
+        setData(temp)
+      }catch(e){
+        console.log(e)
+      }
+      setLoading(false)
+    }
+
     const Post = ({data}) => {
       const profileImage = data.img_profile ? {uri:data.img_profile} : require('../../assets/anon.png')
 
       return <View style={{marginBottom: 12}}>
-      <View style={{flexDirection: 'row', alignItems: 'center'}}>
-        <Image 
-          source={profileImage} 
-          style={[styles.imgProfile, {height:20,width:20}]} />
-        <Text>Username</Text>
-      </View>
+        <View>
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <Image 
+              source={profileImage} 
+              style={[styles.imgProfile, {height:20,width:20, marginBottom: 1}]} />
+              <Text style={{fontWeight: 'bold'}}>{data.username}</Text>
+          </View>
+          <Text style={{fontSize: 12, color: color.grayColor, marginHorizontal: 5}}>at - {data.location}</Text>
+        </View>
       <View style={styles.boxContent}>
         {
           data.img_post ? 
@@ -242,21 +277,24 @@ const HomeScreen = ({session}) => {
     return <>
       { newMessage ? <NewMessage setMewMessage={setMewMessage} setRefresh={setRefresh}/> : 
       <View style={[styles.container, {padding: 10}]}>
-        <View style={{position: 'absolute', bottom: 12, right: 5, zIndex: 100}}>
-            <Button buttonColor={color.primaryColor} mode="contained" onPress={()=>setMewMessage(true)} >Create post</Button>
-          </View>
-          <LoadingModal visible={loading} />
-
-          <FlatList
-            contentContainerStyle={{flexGrow: 1}}
-            style={{marginBottom: 4, paddingBottom: 100}}
-            data={data}
-            renderItem={({item})=> <Post data={item} key={item.id} /> }
-            keyExtractor={item => item.id}    
-            onEndReachedThreshold={0.2}
-            onEndReached={updateData}
-            ListFooterComponent={()=><View style={{width:10,height:10}} />}
-            />
+          {
+            loading ? null : <View style={{position: 'absolute', bottom: 12, right: 5, zIndex: 100}}>
+              <Button buttonColor={color.primaryColor} mode="contained" onPress={()=>setMewMessage(true)} >Create post</Button>
+            </View>
+          }
+          {
+            loading ? <Text>please wait...</Text> :
+            <FlatList
+              contentContainerStyle={{flexGrow: 1}}
+              style={{marginBottom: 4, paddingBottom: 100}}
+              data={data}
+              renderItem={({item})=> <Post data={item} key={item.id} /> }
+              keyExtractor={item => item.id}    
+              onEndReachedThreshold={0.2}
+              onEndReached={updateData}
+              ListFooterComponent={()=><View style={{width:10,height:30}}></View>}
+              />
+          }
       </View>
       }
     </>

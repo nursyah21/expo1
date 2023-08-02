@@ -3,6 +3,7 @@ import {StyleSheet} from 'react-native'
 export const color = {
     statusBarColor: '#999',
     borderColor: '#aaa',
+    grayColor: '#111',
     primaryColor: 'rgb(0,100,0)',
     disableColor: 'rgba(0,100,0,.5)',
     errorColor: 'rgb(200,0,0)',
@@ -18,7 +19,7 @@ const styles = StyleSheet.create({
         width: '100%',
         borderRadius: 5,
         padding: 3,
-        // borderColor: 'rgba(0,0,0,.6)',
+        borderColor: color.borderColor,
     },
     btnPrimary: {
         alignItems: 'center',
